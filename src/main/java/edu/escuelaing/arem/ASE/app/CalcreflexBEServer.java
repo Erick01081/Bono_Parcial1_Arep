@@ -10,6 +10,7 @@
     import java.net.Socket;
     import java.net.URI;
     import java.net.URISyntaxException;
+    import java.util.Arrays;
 
     /**
      * Hello world!
@@ -103,20 +104,44 @@
 
 
         public static String computeMathCommand(String uri) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-            String command = uri.split("=")[1];
+            String[] parts = uri.split("=")[1].split("\\(");
+            String command = parts[0];
+            String[] params = parts[1].replace(")", "").split(",");
 
+            if (command.equals("bbl")) {
+                return handleBubbleSort(params);
+            } else {
+                return handleMathFunction(command, params);
+            }
+        }
 
-            Class c = Math.class;
-            Class[] parameterTypes={double.class};
-            Method m =c.getDeclaredMethod(command.split("\\(")[0], parameterTypes);
+        private static String handleMathFunction(String command, String[] params) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+            Class<?> c = Math.class;
+            Method m;
+            Object[] methodParams;
 
-            String number = command.split("[\\(\\)]")[1];
+            if (params.length == 1) {
+                Class<?>[] parameterTypes = {double.class};
+                m = c.getDeclaredMethod(command, parameterTypes);
+                methodParams = new Object[]{Double.parseDouble(params[0])};
+            } else if (params.length == 2) {
+                Class<?>[] parameterTypes = {double.class, double.class};
+                m = c.getDeclaredMethod(command, parameterTypes);
+                methodParams = new Object[]{Double.parseDouble(params[0]), Double.parseDouble(params[1])};
+            } else {
+                throw new IllegalArgumentException("Unsupported number of parameters for math function");
+            }
 
-            double numero = Double.parseDouble(number);
+            return m.invoke(null, methodParams).toString();
+        }
 
-            Object[] params = {numero};
-            String resp = m.invoke(null, params).toString();
-            return resp;
+        private static String handleBubbleSort(String[] params) {
+            double[] numbers = new double[params.length];
+            for (int i = 0; i < params.length; i++) {
+                numbers[i] = Double.parseDouble(params[i]);
+            }
+            double[] sortedNumbers = BubbleSort(numbers);
+            return Arrays.toString(sortedNumbers);
         }
 
         public static double[] BubbleSort(double[] list) {
